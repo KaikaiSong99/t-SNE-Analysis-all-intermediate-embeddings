@@ -357,7 +357,7 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
             }
             //qDebug() << "allEmbeddings size: " << _allEmbeddings.size();
 
-=           if (numDim == 2) {
+            if (numDim == 2) {
                 updateEmbedding(_outEmbedding.getData(), _outEmbedding.getNumPoints(), 2); // if not update in during the iteration, the record will be incorrect
             }
             else {
