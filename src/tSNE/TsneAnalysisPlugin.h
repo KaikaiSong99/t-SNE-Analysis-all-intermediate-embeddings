@@ -42,6 +42,7 @@ private:
     TsneAnalysis                        _tsneAnalysis;          /** TSNE analysis */
     TsneSettingsAction*                 _tsneSettingsAction;    /** TSNE settings action */
     mv::Task                            _dataPreparationTask;   /** Task for reporting data preparation progress */
+    //std::vector<float>                  _embeddingRecord;       /** Embeddings over iterated timesteps */
 
 private:
     ProbDistMatrix                      _probDistMatrix;        /** Probability distribution matrix used for serialization */

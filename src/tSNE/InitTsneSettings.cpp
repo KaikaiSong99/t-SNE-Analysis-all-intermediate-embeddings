@@ -116,11 +116,11 @@ void InitTsneSettings::updateDatasetPicker()
     _datasetInitAction.setPopulationMode(AbstractDatasetsModel::PopulationMode::Automatic);
 }
 
-std::vector<float> InitTsneSettings::getInitEmbedding(size_t numPoints)
+std::vector<float> InitTsneSettings::getInitEmbedding(size_t numPoints, int numDimensions)
 {
     assert(numPoints > 0);
-
-    std::vector<float> initPositions(numPoints * 2, -1.f);
+    qDebug() << "Initializing t-SNE embedding with " << numPoints << " points and " << numDimensions << " dimensions";
+    std::vector<float> initPositions(numPoints * numDimensions, -1.f);
 
     if (_randomInitAction.isChecked())
     {
@@ -140,8 +140,18 @@ std::vector<float> InitTsneSettings::getInitEmbedding(size_t numPoints)
         for (size_t i = 0; i < numPoints; ++i) {
             auto randomPoint = randomVec();
 
-            initPositions[i * 2]        = randomPoint.first;
-            initPositions[i * 2 + 1]    = randomPoint.second;
+            // numDimensions should be either 1 or 2
+            if (numDimensions == 1)
+            {
+                //qDebug() << "intializing 1D embedding";
+                initPositions[i]            = randomPoint.first;
+            }
+            else
+            {
+                //qDebug() << "intializing 2D embedding";
+                initPositions[i * 2]        = randomPoint.first;
+                initPositions[i * 2 + 1]    = randomPoint.second;
+            }
         }
     }
     else
@@ -164,21 +174,32 @@ std::vector<float> InitTsneSettings::getInitEmbedding(size_t numPoints)
         // Calculate the mean and standard deviation of the first embedding dimension
         float sum = 0.f;
         for (size_t i = 0; i < numPoints; ++i)
-            sum += initPositions[i * 2];
+            if (numDimensions == 1)
+                sum += initPositions[i];
+            else
+                sum += initPositions[i * 2];
 
         float mean = sum / numPoints;
 
         float stdevCurrent = 0.f;
         for (size_t i = 0; i < numPoints; ++i)
-            stdevCurrent += std::pow(initPositions[i * 2] - mean, 2);
+            if (numDimensions == 1)
+                stdevCurrent += std::pow(initPositions[i] - mean, 2);
+            else
+                stdevCurrent += std::pow(initPositions[i * 2] - mean, 2);
 
         stdevCurrent = std::sqrt(stdevCurrent / numPoints);
 
         // Re-scale the data to match the desired standard deviation
         float scaleFactor = stdevDesired / stdevCurrent;
         for (size_t i = 0; i < numPoints; ++i) {
-            initPositions[i * 2]        = (initPositions[i * 2] - mean) * scaleFactor + mean;
-            initPositions[i * 2 + 1]    = (initPositions[i * 2 + 1] - mean) * scaleFactor + mean;
+            if (numDimensions == 1)
+                initPositions[i]         = (initPositions[i] - mean) * scaleFactor + mean;
+            else {
+                initPositions[i * 2]     = (initPositions[i * 2] -     mean) * scaleFactor + mean;
+                initPositions[i * 2 + 1] = (initPositions[i * 2 + 1] - mean) * scaleFactor + mean;
+            }
+            
         }
     }
 

@@ -6,6 +6,7 @@ using namespace mv::gui;
 GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSettingsAction) :
     GroupAction(&tsneSettingsAction, "TSNE", true),
     _tsneSettingsAction(tsneSettingsAction),
+    _numDimensionAction(this, "Embedding dimensions"),
     _knnAlgorithmAction(this, "kNN Algorithm"),
     _distanceMetricAction(this, "Distance metric"),
     _perplexityAction(this, "Perplexity"),
@@ -14,6 +15,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _saveProbDistAction(this, "Save analysis to projects", false)
 {
     addAction(&_knnAlgorithmAction);
+    addAction(&_numDimensionAction);
     addAction(&_distanceMetricAction);
     addAction(&_perplexityAction);
     
@@ -23,10 +25,12 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     addAction(&_saveProbDistAction);
 
     _knnAlgorithmAction.setDefaultWidgetFlags(OptionAction::ComboBox);
+    _numDimensionAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _distanceMetricAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _perplexityAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
 
     _knnAlgorithmAction.initialize(QStringList({ "FLANN", "HNSW", "ANNOY" }), "FLANN");
+    _numDimensionAction.initialize(QStringList({ "1", "2" }), "2");
     _distanceMetricAction.initialize(QStringList({ "Euclidean", "Cosine", "Inner Product", "Manhattan", "Hamming", "Dot" }), "Euclidean");
     _perplexityAction.initialize(2, 50, 30);
 
@@ -42,6 +46,14 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
         if (_knnAlgorithmAction.getCurrentText() == "ANNOY")
             _tsneSettingsAction.getKnnParameters().setKnnAlgorithm(hdi::dr::knn_library::KNN_ANNOY);
+    };
+
+    const auto updateNumDimension = [this]() -> void {
+        if (_numDimensionAction.getCurrentText() == "1")
+            _tsneSettingsAction.getTsneParameters().setNumDimensionsOutput(1);
+
+        if (_numDimensionAction.getCurrentText() == "2")
+            _tsneSettingsAction.getTsneParameters().setNumDimensionsOutput(2);
     };
 
     const auto updateDistanceMetric = [this]() -> void {
@@ -100,6 +112,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         const auto enable = !isReadOnly();
 
         _knnAlgorithmAction.setEnabled(enable);
+        _numDimensionAction.setEnabled(enable);
         _distanceMetricAction.setEnabled(enable);
         _computationAction.getNumIterationsAction().setEnabled(enable);
         _perplexityAction.setEnabled(enable);
@@ -110,6 +123,10 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
     connect(&_knnAlgorithmAction, &OptionAction::currentIndexChanged, this, [this, updateKnnAlgorithm](const std::int32_t& currentIndex) {
         updateKnnAlgorithm();
+    });
+
+    connect(&_numDimensionAction, &OptionAction::currentIndexChanged, this, [this, updateNumDimension](const std::int32_t& currentIndex) {
+        updateNumDimension();
     });
 
     connect(&_distanceMetricAction, &OptionAction::currentIndexChanged, this, [this, updateDistanceMetric](const std::int32_t& currentIndex) {
@@ -153,6 +170,7 @@ void GeneralTsneSettingsAction::fromVariantMap(const QVariantMap& variantMap)
     GroupAction::fromVariantMap(variantMap);
 
     _knnAlgorithmAction.fromParentVariantMap(variantMap);
+    _numDimensionAction.fromParentVariantMap(variantMap);
     _distanceMetricAction.fromParentVariantMap(variantMap);
     _perplexityAction.fromParentVariantMap(variantMap);
     _computationAction.fromParentVariantMap(variantMap);
@@ -165,6 +183,7 @@ QVariantMap GeneralTsneSettingsAction::toVariantMap() const
     QVariantMap variantMap = GroupAction::toVariantMap();
 
     _knnAlgorithmAction.insertIntoVariantMap(variantMap);
+    _numDimensionAction.insertIntoVariantMap(variantMap);
     _distanceMetricAction.insertIntoVariantMap(variantMap);
     _perplexityAction.insertIntoVariantMap(variantMap);
     _computationAction.insertIntoVariantMap(variantMap);

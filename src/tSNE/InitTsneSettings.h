@@ -28,7 +28,7 @@ public:
      */
     InitTsneSettings(TsneSettingsAction& tsneSettingsAction, size_t numPointsInputData);
 
-    std::vector<float> getInitEmbedding(size_t numPoints);
+    std::vector<float> getInitEmbedding(size_t numPoints, int numDimensions);
 
     void updateSeed();
 

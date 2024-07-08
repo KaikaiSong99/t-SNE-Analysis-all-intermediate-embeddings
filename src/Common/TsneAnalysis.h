@@ -77,7 +77,8 @@ public slots:
     void stop();
 
 signals:
-    void embeddingUpdate(TsneData tsneData);
+    //void embeddingUpdate(TsneData tsneData);
+    void embeddingUpdate(const std::vector<float> embeddingRecords, const int numPoints, const int numDismensions);
     void finished();
     void aborted();
 
@@ -107,6 +108,8 @@ private:
     TsneData                                _outEmbedding;                  /** Transfer embedding data array */
     OffscreenBuffer*                        _offscreenBuffer;               /** Offscreen OpenGL buffer required to run the gradient descent */
     bool                                    _shouldStop;                    /** Termination flags */
+    std::vector<float>                      _allEmbeddings;                 /** All embeddings over the iterations */
+    //std::vector<float> _outputdata;                                         /** Output data */
 
 private: 
     mv::Task*                               _parentTask;                    /** Task: parent */
@@ -155,7 +158,8 @@ signals:
     void stopWorker();
 
     // Outgoing signals
-    void embeddingUpdate(const TsneData tsneData);
+    //void embeddingUpdate(const TsneData tsneData);
+    void embeddingUpdate(const std::vector<float> embeddingRecords, const int numPoints, const int numDismensions);
     void started();
     void finished();
     void aborted();

@@ -30,6 +30,7 @@ public:
 public: // Action getters
 
     TsneSettingsAction& getTsneSettingsAction() { return _tsneSettingsAction; };
+    OptionAction& getNumDimensionAction() { return _numDimensionAction; }
     OptionAction& getKnnAlgorithmAction() { return _knnAlgorithmAction; };
     OptionAction& getDistanceMetricAction() { return _distanceMetricAction; };
     IntegralAction& getNumIterationsAction() { return _computationAction.getNumIterationsAction(); };
@@ -55,6 +56,7 @@ public: // Serialization
 
 protected:
     TsneSettingsAction&     _tsneSettingsAction;                    /** Reference to parent tSNE settings action */
+    OptionAction            _numDimensionAction;
     OptionAction            _knnAlgorithmAction;                    /** KNN algorithm action */
     OptionAction            _distanceMetricAction;                  /** Distance metric action */
     IntegralAction          _perplexityAction;                      /** Perplexity action */

@@ -215,9 +215,17 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
     if (_shouldStop)
         return;
 
-    const auto updateEmbedding = [this](const TsneData& tsneData) -> void {
+    //const auto updateEmbedding = [this](const TsneData& tsneData) -> void {
+    //    copyEmbeddingOutput();
+    //    //emit embeddingUpdate(tsneData);
+    //    emit embeddingUpdate(tsneData.getData(), tsneData.getNumPoints());
+    //    qDebug() << "tSNE: Updated embedding.";
+    //    };
+    const auto updateEmbedding = [this](const std::vector<float>& data, const int numPoints, const int numDismensions) -> void {
         copyEmbeddingOutput();
-        emit embeddingUpdate(tsneData);
+        //emit embeddingUpdate(tsneData);
+        emit embeddingUpdate(data, numPoints, numDismensions);
+        //qDebug() << "tSNE: Updated embedding.";
         };
 
     auto initGPUTSNE = [this]() {
@@ -252,10 +260,14 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
             _CPU_tSNE.setTheta(theta);
 
             // In case of HSNE, the _probabilityDistribution is a non-summetric transition matrix and initialize() symmetrizes it here
-            if (_hasProbabilityDistribution)
+            if (_hasProbabilityDistribution) {
+                qDebug() << "CPU t-SNE: Initialize with probability distribution";
                 _CPU_tSNE.initialize(_probabilityDistribution, &_embedding, params);
-            else
+            }
+            else {
+                qDebug() << "CPU t-SNE: Initialize with Joint probability distribution";
                 _CPU_tSNE.initializeWithJointProbabilityDistribution(_probabilityDistribution, &_embedding, params);
+            }
 
             qDebug() << "t-SNE (CPU, Barnes-Hut): Exaggeration factor: " << params._exaggeration_factor << ", exaggeration iterations: " << params._remove_exaggeration_iter << ", exaggeration decay iter: " << params._exponential_decay_iter << ", theta: " << theta;
         }
@@ -270,8 +282,9 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
                 initGPUTSNE();
             else
                 initCPUTSNE();
-
-            updateEmbedding(_outEmbedding);
+            // _outEmbedding.getData().size() / _outEmbedding.getNumPoints()
+            //qDebug() << "output embedding size: " << _outEmbedding.getData().size() << ", numPoints: " << _outEmbedding.getNumPoints();
+            updateEmbedding(_outEmbedding.getData(), _outEmbedding.getNumPoints(), 5);
         }
         qDebug() << "tSNE: Init t-SNE " << t_init / 1000 << " seconds.";
     };
@@ -298,6 +311,10 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
 
     const auto beginIteration = _currentIteration;
     const auto endIteration = beginIteration + iterations;
+    qDebug() << "tSNE: Begin iteration: " << beginIteration << ", End iteration: " << endIteration;
+    // clear _allEmbeddings if beginIteration == 0
+    if (beginIteration == 0)
+        _allEmbeddings.clear();
 
     double elapsed = 0;
     double t_grad = 0;
@@ -311,16 +328,43 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
 
         // Performs gradient descent for every iteration
         for (_currentIteration = beginIteration; _currentIteration < endIteration; ++_currentIteration) {
-
+            //qDebug() << "update every: " << _tsneParameters.getUpdateCore();
             _tasks->getComputeGradientDescentTask().setSubtaskStarted(currentStepIndex);
 
             hdi::utils::ScopedTimer<double> timer(t_grad);
 
             // Perform t-SNE iteration
             singleTSNEIteration();
+            //qDebug() << "tSNE: Iteration " << _currentIteration << " done.";
+            //qDebug() << "output size: " << _outEmbedding.getData().size() << ", numPoints: " << _outEmbedding.getNumPoints();
+            /*if (_currentIteration > 0 && _tsneParameters.getUpdateCore() > 0 && _currentIteration % _tsneParameters.getUpdateCore() == 0)
+                updateEmbedding(_outEmbedding);*/
+            
+            int numDim = _outEmbedding.getData().size() / _outEmbedding.getNumPoints();
+            std::vector<float> embedding2D;
+            if (numDim == 1) {
+                // for 1D t-SNE, fill the x axis with float valued current timestep and y asis with _outEmbedding data
+                for (int i = 0; i < _outEmbedding.getNumPoints(); i++)
+                {
+                    embedding2D.push_back(static_cast<float>(_currentIteration)/1000.f);
+                    embedding2D.push_back(_outEmbedding.getData()[i]);
+                }
+                _allEmbeddings.insert(_allEmbeddings.end(), embedding2D.begin(), embedding2D.end());
+            }
+            else {
+                // append the current embedding _allEmbeddings
+                _allEmbeddings.insert(_allEmbeddings.end(), _outEmbedding.getData().begin(), _outEmbedding.getData().end());
+            }
+            //qDebug() << "allEmbeddings size: " << _allEmbeddings.size();
 
-            if (_currentIteration > 0 && _tsneParameters.getUpdateCore() > 0 && _currentIteration % _tsneParameters.getUpdateCore() == 0)
-                updateEmbedding(_outEmbedding);
+=           if (numDim == 2) {
+                updateEmbedding(_outEmbedding.getData(), _outEmbedding.getNumPoints(), 2); // if not update in during the iteration, the record will be incorrect
+            }
+            else {
+                updateEmbedding(embedding2D, _outEmbedding.getNumPoints(), 2);
+            }
+            //updateEmbedding(_outEmbedding.getData(), _outEmbedding.getNumPoints(), _outEmbedding.getData().size() / _outEmbedding.getNumPoints()); // if not update in during the iteration, the record will be incorrect
+            
 
             if (t_grad > 1000)
                 qDebug() << "Time: " << t_grad;
@@ -339,8 +383,35 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
         }
 
         gradientDescentCleanup();
+        qDebug() << "tSNE: Finished gradient descent, now prepare all t-SNE records.";
+        //qDebug() << "_allEmbeddings size: " << _allEmbeddings.size();
+        //qDebug() << "_outEmbedding numpoints: " << _outEmbedding.getNumPoints() << ", size: " << _outEmbedding.getData().size();
 
-        updateEmbedding(_outEmbedding);
+        //qDebug() << "output embedding size: " << _outEmbedding.getData().size() << ", numPoints: " << _outEmbedding.getNumPoints();
+        //updateEmbedding(_outEmbedding.getData(), _outEmbedding.getNumPoints(), _outEmbedding.getData().size() / _outEmbedding.getNumPoints());
+        
+        // define a new vector to store the transposed data, so that embeddings are not organized as [x(i0,t0), y(x0,t0), x(i1,t0), y(i1,t0), ...] but as [x(i0,t0), y(i0,t0), x(i0, t1), y(i0,t1), ...]
+        std::vector<float> dataTransposed; 
+        int numOutputDim = _outEmbedding.getData().size() / _outEmbedding.getNumPoints();
+        int numTimesteps; // = _allEmbeddings.size() / _outEmbedding.getData().size();
+        if (numOutputDim == 2)
+            numTimesteps = _allEmbeddings.size() / _outEmbedding.getData().size();
+        else
+            numTimesteps = _allEmbeddings.size() / (_outEmbedding.getData().size() * 2);
+        
+        for (int i = 0; i < _outEmbedding.getNumPoints(); i++)
+        {
+            for (int j = 0; j < numTimesteps; j++)
+            {   
+                dataTransposed.push_back(_allEmbeddings[j * 2 * _outEmbedding.getNumPoints() + 2 * i]);
+                dataTransposed.push_back(_allEmbeddings[j * 2 * _outEmbedding.getNumPoints() + 2 * i + 1]);
+            }
+        }
+        qDebug() << "transpose preparation done, length: " << dataTransposed.size();
+
+        updateEmbedding(dataTransposed, _outEmbedding.getNumPoints(), _allEmbeddings.size() / _outEmbedding.getNumPoints());
+
+        //updateEmbedding(_allEmbeddings, _outEmbedding.getNumPoints(), _allEmbeddings.size() / _outEmbedding.getNumPoints());
 
         _tasks->getComputeGradientDescentTask().setFinished();
     }

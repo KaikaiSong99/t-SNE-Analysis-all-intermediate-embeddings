@@ -19,7 +19,7 @@ public:
         _presetEmbedding(false),
         _exaggerationFactor(4),
         _updateCore(10),
-        _gradientDescentType(GradientDescentType::GPU)
+        _gradientDescentType(GradientDescentType::CPU)
     {
 
     }

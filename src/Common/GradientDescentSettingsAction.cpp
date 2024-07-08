@@ -25,7 +25,9 @@ GradientDescentSettingsAction::GradientDescentSettingsAction(QObject* parent, Ts
     _exaggerationIterAction.initialize(0, 10000, 250);
     _exponentialDecayAction.initialize(0, 10000, 70);
 
-    _gradientDescentTypeAction.initialize({ "GPU", "CPU" });
+    _gradientDescentTypeAction.initialize({ "CPU", "GPU" });
+    //_gradientDescentTypeAction.initialize({ "GPU", "CPU" });
+    //_gradientDescentTypeAction.initialize({ "CPU" });
 
     _exaggerationFactorAction.setToolTip("Defaults to 4 + number of points / 60'000");
     _exponentialDecayAction.setToolTip("Iterations after 'Exaggeration iterations' during \nwhich the exaggeration factor exponentionally decays towards 1");
@@ -46,8 +48,8 @@ GradientDescentSettingsAction::GradientDescentSettingsAction(QObject* parent, Ts
     const auto updateGradientDescentTypeAction = [this]() -> void {
         switch (_gradientDescentTypeAction.getCurrentIndex())
         {
-        case 0: _tsneParameters.setGradientDescentType(GradientDescentType::GPU); break;
-        case 1: _tsneParameters.setGradientDescentType(GradientDescentType::CPU); break;
+        case 0: _tsneParameters.setGradientDescentType(GradientDescentType::CPU); break;
+        case 1: _tsneParameters.setGradientDescentType(GradientDescentType::GPU); break;
         }
         
     };

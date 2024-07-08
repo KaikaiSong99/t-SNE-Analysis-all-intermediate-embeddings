@@ -50,7 +50,7 @@ void TsneAnalysisPlugin::init()
         auto newOutput = Dataset<Points>(derivedData.get<Points>());
         setOutputDataset(newOutput);
 
-        const size_t numEmbeddingDimensions = 2;
+        const size_t numEmbeddingDimensions = 4;
         std::vector<float> initialData;
         initialData.resize(numEmbeddingDimensions * inputDataset->getNumPoints());
 
@@ -118,10 +118,15 @@ void TsneAnalysisPlugin::init()
     connect(&computationAction.getStartComputationAction(), &TriggerAction::triggered, this, [this, &computationAction, changeSettingsReadOnly]() {
         changeSettingsReadOnly(true);
 
-        if(_tsneSettingsAction->getGeneralTsneSettingsAction().getReinitAction().isChecked())
+        if (_tsneSettingsAction->getGeneralTsneSettingsAction().getReinitAction().isChecked()) {
+            qDebug() << "TsneAnalysisPlugin: reinitializing computation...";
             reinitializeComputation();
-        else
+        }
+        else {
+            qDebug() << "TsneAnalysisPlugin: starting computation...";
             startComputation();
+        }
+            
 
         _tsneSettingsAction->getGeneralTsneSettingsAction().getReinitAction().setCheckable(true);   // only enable re-init after first computation
     });
@@ -138,10 +143,10 @@ void TsneAnalysisPlugin::init()
         stopComputation();
     });
 
-    connect(&_tsneAnalysis, &TsneAnalysis::embeddingUpdate, this, [this](const TsneData tsneData) {
-
+    connect(&_tsneAnalysis, &TsneAnalysis::embeddingUpdate, this, [this](const std::vector<float> embeddingRecords, const int numPoints, const int numDismensions) {
+        //qDebug() << "output size: " << _embeddingRecord.size();
         // Update the output points dataset with new data from the TSNE analysis
-        getOutputDataset<Points>()->setData(tsneData.getData().data(), tsneData.getNumPoints(), 2);
+        getOutputDataset<Points>()->setData(embeddingRecords.data(), numPoints, numDismensions);
 
         _tsneSettingsAction->getGeneralTsneSettingsAction().getNumberOfComputatedIterationsAction().setValue(_tsneAnalysis.getNumIterations() - 1);
 
@@ -207,10 +212,11 @@ void TsneAnalysisPlugin::startComputation()
     _tsneSettingsAction->getComputationAction().getRunningAction().setChecked(true);
 
     // Init embedding: random or set from other dataset, e.g. PCA
-    auto initEmbedding = _tsneSettingsAction->getInitalEmbeddingSettingsAction().getInitEmbedding(numPoints);
+    int embeddingDim = _tsneSettingsAction->getTsneParameters().getNumDimensionsOutput();
+    auto initEmbedding = _tsneSettingsAction->getInitalEmbeddingSettingsAction().getInitEmbedding(numPoints, embeddingDim);
 
     _dataPreparationTask.setFinished();
-
+    //qDebug() << "TSNE Parameters: " << _tsneSettingsAction->getTsneParameters().getPresetEmbedding(); // 0
     _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), _tsneSettingsAction->getKnnParameters(), std::move(data), numEnabledDimensions, &initEmbedding);
 }
 
@@ -231,8 +237,8 @@ void TsneAnalysisPlugin::reinitializeComputation()
         initSettings.updateSeed();
 
     const auto numPoints = getOutputDataset<Points>()->getNumPoints();
-
-    auto initEmbedding = initSettings.getInitEmbedding(numPoints);
+    int embeddingDim = _tsneSettingsAction->getTsneParameters().getNumDimensionsOutput();
+    auto initEmbedding = initSettings.getInitEmbedding(numPoints, embeddingDim);
 
     _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), std::move(_probDistMatrix), numPoints, &initEmbedding);
 }
@@ -252,8 +258,14 @@ void TsneAnalysisPlugin::continueComputation()
         auto currentEmbedding = getOutputDataset<Points>();
 
         std::vector<float> currentEmbeddingPositions;
-        currentEmbeddingPositions.resize(2ull * currentEmbedding->getNumPoints());
-        currentEmbedding->populateDataForDimensions<std::vector<float>, std::vector<unsigned int>>(currentEmbeddingPositions, { 0, 1 });
+        if (_tsneSettingsAction->getTsneParameters().getNumDimensionsOutput() == 2) {
+            currentEmbeddingPositions.resize(2ull * currentEmbedding->getNumPoints());
+            currentEmbedding->populateDataForDimensions<std::vector<float>, std::vector<unsigned int>>(currentEmbeddingPositions, { 0, 1 });
+        }
+        else {
+            currentEmbeddingPositions.resize(1ull * currentEmbedding->getNumPoints());
+            currentEmbedding->populateDataForDimensions<std::vector<float>, std::vector<unsigned int>>(currentEmbeddingPositions, { 0 });
+        }
 
         _tsneAnalysis.startComputation(_tsneSettingsAction->getTsneParameters(), std::move(_probDistMatrix), currentEmbedding->getNumPoints(), &currentEmbeddingPositions, _tsneSettingsAction->getGeneralTsneSettingsAction().getNumberOfComputatedIterationsAction().getValue());
     }
