@@ -10,6 +10,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _knnAlgorithmAction(this, "kNN Algorithm"),
     _distanceMetricAction(this, "Distance metric"),
     _perplexityAction(this, "Perplexity"),
+    _subsampleAction(this, "Save embeddings"),
     _computationAction(this),
     _reinitAction(this, "Reintialize instead of recompute", false),
     _saveProbDistAction(this, "Save analysis to projects", false)
@@ -18,6 +19,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     addAction(&_numDimensionAction);
     addAction(&_distanceMetricAction);
     addAction(&_perplexityAction);
+    addAction(&_subsampleAction);
     
     _computationAction.addActions();
 
@@ -27,11 +29,13 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _knnAlgorithmAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _numDimensionAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _distanceMetricAction.setDefaultWidgetFlags(OptionAction::ComboBox);
+    _subsampleAction.setDefaultWidgetFlags(OptionAction::ComboBox);
     _perplexityAction.setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
 
     _knnAlgorithmAction.initialize(QStringList({ "FLANN", "HNSW", "ANNOY" }), "FLANN");
     _numDimensionAction.initialize(QStringList({ "1", "2" }), "2");
     _distanceMetricAction.initialize(QStringList({ "Euclidean", "Cosine", "Inner Product", "Manhattan", "Hamming", "Dot" }), "Euclidean");
+    _subsampleAction.initialize(QStringList({ "Every Iter", "Every 5 Iters", "Every 10 Iters" }), "Every 5 Iters");
     _perplexityAction.initialize(2, 50, 30);
 
     _reinitAction.setToolTip("Instead of recomputing knn, simply re-initialize t-SNE embedding and recompute gradient descent.");
@@ -76,6 +80,17 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
             _tsneSettingsAction.getKnnParameters().setKnnDistanceMetric(hdi::dr::knn_distance_metric::KNN_METRIC_DOT);
     };
 
+    const auto updateSubsample = [this]() -> void {
+        if (_subsampleAction.getCurrentText() == "Every Iter")
+            _tsneSettingsAction.getTsneParameters().setSubsampleFactor(1);
+
+        if (_subsampleAction.getCurrentText() == "Every 5 Iters")
+            _tsneSettingsAction.getTsneParameters().setSubsampleFactor(5);
+
+        if (_subsampleAction.getCurrentText() == "Every 10 Iters")
+            _tsneSettingsAction.getTsneParameters().setSubsampleFactor(10);
+        };
+
     const auto updateNumIterations = [this]() -> void {
         _tsneSettingsAction.getTsneParameters().setNumIterations(_computationAction.getNumIterationsAction().getValue());
     };
@@ -119,6 +134,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
         _computationAction.getUpdateIterationsAction().setEnabled(enable);
         _reinitAction.setEnabled(enable);
         _saveProbDistAction.setEnabled(enable);
+        _subsampleAction.setEnabled(enable);
     };
 
     connect(&_knnAlgorithmAction, &OptionAction::currentIndexChanged, this, [this, updateKnnAlgorithm](const std::int32_t& currentIndex) {
@@ -139,6 +155,10 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
 
     connect(&_perplexityAction, &IntegralAction::valueChanged, this, [this, updatePerplexity](const std::int32_t& value) {
         updatePerplexity();
+    });
+
+    connect(&_subsampleAction, &OptionAction::currentIndexChanged, this, [this, updateSubsample](const std::int32_t& currentIndex) {
+        updateSubsample();
     });
 
     connect(&_computationAction.getUpdateIterationsAction(), &IntegralAction::valueChanged, this, [this, updateCoreUpdate](const std::int32_t& value) {

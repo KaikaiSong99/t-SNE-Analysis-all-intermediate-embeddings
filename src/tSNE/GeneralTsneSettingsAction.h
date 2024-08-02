@@ -36,6 +36,7 @@ public: // Action getters
     IntegralAction& getNumIterationsAction() { return _computationAction.getNumIterationsAction(); };
     IntegralAction& getNumberOfComputatedIterationsAction() { return _computationAction.getNumberOfComputatedIterationsAction(); };
     IntegralAction& getPerplexityAction() { return _perplexityAction; };
+    OptionAction& getSubsampleAction() { return _subsampleAction; };
     TsneComputationAction& getComputationAction() { return _computationAction; }
     ToggleAction& getReinitAction() { return _reinitAction; }
     ToggleAction& getSaveProbDistAction() { return _saveProbDistAction; }
@@ -60,6 +61,7 @@ protected:
     OptionAction            _knnAlgorithmAction;                    /** KNN algorithm action */
     OptionAction            _distanceMetricAction;                  /** Distance metric action */
     IntegralAction          _perplexityAction;                      /** Perplexity action */
+    OptionAction            _subsampleAction;                       /** Subsample action */
     TsneComputationAction   _computationAction;                     /** Computation action */
     ToggleAction            _reinitAction;                          /** Whether to re-initialize instead of recomputing from scratch */
     ToggleAction            _saveProbDistAction;                    /** Save t-SNE to projects action */

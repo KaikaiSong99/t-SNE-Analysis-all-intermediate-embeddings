@@ -320,6 +320,7 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
     double t_grad = 0;
     {
         qDebug() << "tSNE: Computing " << endIteration - beginIteration << " gradient descent iterations...";
+        int subSampleFactor = _tsneParameters.getSubsampleFactor();
 
         _tasks->getComputeGradientDescentTask().setRunning();
         _tasks->getComputeGradientDescentTask().setSubtasks(iterations);
@@ -349,11 +350,14 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
                     embedding2D.push_back(static_cast<float>(_currentIteration)/1000.f);
                     embedding2D.push_back(_outEmbedding.getData()[i]);
                 }
-                _allEmbeddings.insert(_allEmbeddings.end(), embedding2D.begin(), embedding2D.end());
+                // if currentStepIndex divides the current iteration, append the current embedding to _allEmbeddings
+                if (_currentIteration % subSampleFactor == 0)
+                    _allEmbeddings.insert(_allEmbeddings.end(), embedding2D.begin(), embedding2D.end());
             }
             else {
-                // append the current embedding _allEmbeddings
-                _allEmbeddings.insert(_allEmbeddings.end(), _outEmbedding.getData().begin(), _outEmbedding.getData().end());
+                // if currentStepIndex divides the current iteration, append the current embedding to _allEmbeddings
+                if (_currentIteration % subSampleFactor == 0)
+                    _allEmbeddings.insert(_allEmbeddings.end(), _outEmbedding.getData().begin(), _outEmbedding.getData().end());
             }
             //qDebug() << "allEmbeddings size: " << _allEmbeddings.size();
 
@@ -408,6 +412,30 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
             }
         }
         qDebug() << "transpose preparation done, length: " << dataTransposed.size();
+
+        // for x and y components of dataTransposed separately, normalize the data to [0, 1]
+        // find the min and max of x and y components
+        float xMin = dataTransposed[0];
+        float xMax = dataTransposed[0];
+        float yMin = dataTransposed[1];
+        float yMax = dataTransposed[1];
+        for (int i = 0; i < dataTransposed.size(); i += 2)
+        {
+            if (dataTransposed[i] < xMin)
+                xMin = dataTransposed[i];
+            if (dataTransposed[i] > xMax)
+                xMax = dataTransposed[i];
+            if (dataTransposed[i + 1] < yMin)
+                yMin = dataTransposed[i + 1];
+            if (dataTransposed[i + 1] > yMax)
+                yMax = dataTransposed[i + 1];
+        }
+        // normalize the data
+        for (int i = 0; i < dataTransposed.size(); i += 2)
+        {
+            dataTransposed[i]     = (dataTransposed[i]     - xMin) / (xMax - xMin) * 2 - 1;
+            dataTransposed[i + 1] = (dataTransposed[i + 1] - yMin) / (yMax - yMin) * 2 - 1;
+        }
 
         updateEmbedding(dataTransposed, _outEmbedding.getNumPoints(), _allEmbeddings.size() / _outEmbedding.getNumPoints());
 

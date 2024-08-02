@@ -19,7 +19,8 @@ public:
         _presetEmbedding(false),
         _exaggerationFactor(4),
         _updateCore(10),
-        _gradientDescentType(GradientDescentType::CPU)
+        _gradientDescentType(GradientDescentType::CPU),
+        _subsampleFactor(5)
     {
 
     }
@@ -33,6 +34,7 @@ public:
     void setExaggerationFactor(double exaggerationFactor) { _exaggerationFactor = exaggerationFactor; }
     void setGradientDescentType(GradientDescentType gradientDescentType) { _gradientDescentType = gradientDescentType; }
     void setUpdateCore(int updateCore) { _updateCore = updateCore; }
+    void setSubsampleFactor(int subsampleFactor) { _subsampleFactor = subsampleFactor; }
 
     int getNumIterations() const { return _numIterations; }
     int getPerplexity() const { return _perplexity; }
@@ -43,6 +45,7 @@ public:
     int getExaggerationFactor() const { return _exaggerationFactor; }
     GradientDescentType getGradientDescentType() const { return _gradientDescentType; }
     int getUpdateCore() const { return _updateCore; }
+    int getSubsampleFactor() const { return _subsampleFactor; }
 
 private:
     int _numIterations;
@@ -52,6 +55,7 @@ private:
     int _numDimensionsOutput;
     double _exaggerationFactor;
     bool _presetEmbedding;
+    int _subsampleFactor;
     GradientDescentType _gradientDescentType;     // Whether to use CPU or GPU gradient descent
 
     int _updateCore;        // Gradient descent iterations after which the embedding data set in ManiVault's core will be updated
