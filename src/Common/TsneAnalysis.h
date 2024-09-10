@@ -109,6 +109,7 @@ private:
     OffscreenBuffer*                        _offscreenBuffer;               /** Offscreen OpenGL buffer required to run the gradient descent */
     bool                                    _shouldStop;                    /** Termination flags */
     std::vector<float>                      _allEmbeddings;                 /** All embeddings over the iterations */
+    //std::vector<float>                      _embedding1D;                   /** 1D embedding */
     //std::vector<float> _outputdata;                                         /** Output data */
 
 private: 

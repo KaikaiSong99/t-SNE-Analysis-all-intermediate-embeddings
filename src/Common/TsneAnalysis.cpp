@@ -320,6 +320,12 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
     double t_grad = 0;
     {
         qDebug() << "tSNE: Computing " << endIteration - beginIteration << " gradient descent iterations...";
+        //if (_outEmbedding.getData().size() / _outEmbedding.getNumPoints() == 2) {
+        //    updateEmbedding(_outEmbedding.getData(), _outEmbedding.getNumPoints(), 2); // if not update in during the iteration, the record will be incorrect
+        //}
+        //else {
+        //    updateEmbedding(_embedding1D, _outEmbedding.getNumPoints(), 2);
+        //}
         int subSampleFactor = _tsneParameters.getSubsampleFactor();
 
         _tasks->getComputeGradientDescentTask().setRunning();
@@ -330,6 +336,7 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
         // Performs gradient descent for every iteration
         for (_currentIteration = beginIteration; _currentIteration < endIteration; ++_currentIteration) {
             //qDebug() << "update every: " << _tsneParameters.getUpdateCore();
+            //_embedding1D.clear();
             _tasks->getComputeGradientDescentTask().setSubtaskStarted(currentStepIndex);
 
             hdi::utils::ScopedTimer<double> timer(t_grad);
@@ -350,6 +357,7 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
                     embedding2D.push_back(static_cast<float>(_currentIteration)/1000.f);
                     embedding2D.push_back(_outEmbedding.getData()[i]);
                 }
+                //_embedding1D.insert(_embedding1D.end(), embedding2D.begin(), embedding2D.end());
                 // if currentStepIndex divides the current iteration, append the current embedding to _allEmbeddings
                 if (_currentIteration % subSampleFactor == 0)
                     _allEmbeddings.insert(_allEmbeddings.end(), embedding2D.begin(), embedding2D.end());

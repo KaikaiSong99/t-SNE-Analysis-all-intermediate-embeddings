@@ -76,7 +76,7 @@ void TsneComputationAction::addActions()
     parentAction->addAction(&_numberOfComputatedIterationsAction);
 
     buttonGroup->addAction(&_startComputationAction);
-    buttonGroup->addAction(&_continueComputationAction);
+    //buttonGroup->addAction(&_continueComputationAction);
     buttonGroup->addAction(&_stopComputationAction);
 
     parentAction->addAction(buttonGroup);
