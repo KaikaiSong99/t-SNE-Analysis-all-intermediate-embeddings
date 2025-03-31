@@ -20,7 +20,7 @@ public:
         _exaggerationFactor(4),
         _updateCore(10),
         _gradientDescentType(GradientDescentType::CPU),
-        _subsampleFactor(5)
+        _subsampleFactor(10)
     {
 
     }

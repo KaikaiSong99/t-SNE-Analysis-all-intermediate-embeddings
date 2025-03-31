@@ -35,7 +35,7 @@ GeneralTsneSettingsAction::GeneralTsneSettingsAction(TsneSettingsAction& tsneSet
     _knnAlgorithmAction.initialize(QStringList({ "FLANN", "HNSW", "ANNOY" }), "FLANN");
     _numDimensionAction.initialize(QStringList({ "1", "2" }), "2");
     _distanceMetricAction.initialize(QStringList({ "Euclidean", "Cosine", "Inner Product", "Manhattan", "Hamming", "Dot" }), "Euclidean");
-    _subsampleAction.initialize(QStringList({ "Every Iter", "Every 5 Iters", "Every 10 Iters" }), "Every 5 Iters");
+    _subsampleAction.initialize(QStringList({ "Every Iter", "Every 5 Iters", "Every 10 Iters" }), "Every 10 Iters");
     _perplexityAction.initialize(2, 50, 30);
 
     _reinitAction.setToolTip("Instead of recomputing knn, simply re-initialize t-SNE embedding and recompute gradient descent.");

@@ -419,7 +419,7 @@ void TsneWorker::computeGradientDescent(uint32_t iterations)
                 dataTransposed.push_back(_allEmbeddings[j * 2 * _outEmbedding.getNumPoints() + 2 * i + 1]);
             }
         }
-        qDebug() << "transpose preparation done, length: " << dataTransposed.size();
+        //qDebug() << "transpose preparation done, length: " << dataTransposed.size();
 
         // for x and y components of dataTransposed separately, normalize the data to [0, 1]
         // find the min and max of x and y components
